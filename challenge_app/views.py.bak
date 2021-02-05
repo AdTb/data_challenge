@@ -1,0 +1,73 @@
+from django.shortcuts import render
+
+# Create your views here.
+from django.http import HttpResponse,Http404,HttpResponseRedirect
+from django.contrib.auth.decorators import login_required
+from .forms import FileCsvForm
+from .models import Challenge,UserStudent,Submission,SubmissionCount
+from django.urls import reverse
+from django.conf import settings
+from .machinelearning import get_score
+from django.contrib.auth import authenticate, login
+
+def fom_up_url():
+    
+
+def login_view(request):
+    if request.method == 'POST':
+        username = request.POST['username']
+        password = request.POST['password']
+        user = authenticate(request, username=username, password=password)
+        if user is not None:
+            login(request, user)
+            return HttpResponseRedirect(reverse('challenges'))
+        else:
+           return render(request, 'login.html', {'error_message': 'Impossible de vous authentifier'})
+    else:
+        return render(request, 'login.html')
+@login_required(login_url='login')
+def show_all_challenges(request):
+    challenges= Challenge.objects.all()
+    return render(request, 'challengelist.html', {'challenges':  challenges})
+
+@login_required(login_url='login')
+def get_leaderboard(request,id_challenge):
+    try:
+        challenge = Challenge.objects.get(pk=id_challenge)
+    except Challenge.DoesNotExist:
+        raise Http404("Challenge does not exist")
+    leaderboard = Submission.objects.order_by('score').filter(challenge__pk = id_challenge)
+    return render(request, 'showchallenge.html', {'challenge':  challenge, 'leaderboard':leaderboard, 'training_input_url': challenge.training_input.file_uploaded.url, 'training_output_url': challenge.training_output.file_uploaded.url,'test_input_url':  challenge.test_input.file_uploaded.url})
+
+@login_required(login_url='login')
+def upload_file(request,id_challenge):
+    try:
+        challenge = Challenge.objects.get(pk=id_challenge)
+    except Challenge.DoesNotExist:
+        raise Http404("Challenge does not exist")
+    if request.method == 'POST':
+        form = FileCsvForm(request.POST, request.FILES)
+        try: 
+            user_submission = UserStudent.objects.get(pk=request.user.id)
+        except UserStudent.DoesNotExist:
+            return render(request, 'upload.html', {'form': form, 'challenge': challenge, 'error_message'  : 'You are not registered as student, you cannot upload a file to this challenge.' })
+        if form.is_valid():
+            try:
+                subcount = SubmissionCount.objects.get(UserStudent = user_submission, Challenge = challenge)
+            except SubmissionCount.DoesNotExist:
+                subcount = SubmissionCount(UserStudent = user_submission, Challenge = challenge, count_daily = 0, count_total = 0)
+            if subcount.count_daily >= challenge.number_daily_submission:
+                return render(request, 'upload.html', {'form': form, 'challenge': challenge, 'error_message' : 'You have reached the daily limit of '+str(challenge.number_daily_submission)+' submissions to this challenge. You will be able to upload a new prediction tomorrow.' })
+            subcount.count_daily +=1
+            subcount.count_total +=1
+            subcount.save()
+            filecsv = form.save(commit=False)
+            filecsv.submitted_by = user_submission
+            new_submission = Submission(submitted_by = user_submission, file_submitted = filecsv, challenge = challenge, score = None)
+            filecsv.save()
+            new_submission.score = get_score(settings.MEDIA_ROOT+challenge.reference.file_uploaded.name,settings.MEDIA_ROOT+filecsv.file_uploaded.name)
+            new_submission.save()
+            return HttpResponseRedirect(reverse('leaderboard',args=[id_challenge]))
+    else:
+        form = FileCsvForm()
+    return render(request, 'upload.html', {'form': form, 'challenge': challenge })            

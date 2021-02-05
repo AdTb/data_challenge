@@ -1,0 +1,43 @@
+import os
+from django.core.exceptions import ValidationError
+
+
+def validate_size(value,limit):
+    if value.size > limit:
+        raise ValidationError('Le fichier est trop gros. La taille ne devrait pas dépasser %(size)s MiB.', params = {'size': str(size)})
+def validate_extension(value,extensionList):
+    ext = os.path.splitext(value.name)[1]  # [0] returns path+filename
+    if not ext.lower() in extensionList:
+       raise ValidationError('Veuillez téléverser votre fichier dans l\'un des formats suivants '+ str(extensionList))
+
+def validate_file_code(value):
+    size_limit_MB = 1
+    size_limit = size_limit_MB * 1024*1024
+    validate_size(value,size_limit)
+    valid_extensions = ['.rmd','.r','.py','.ipynb']
+    validate_extension(value,valid_extensions)
+def validate_file_csv(value):
+    valid_extensions = ['.csv']
+    size_mb = 5
+    limit = size_mb * 1024 * 1024
+    validate_size(value,limit)
+    validate_extension(value,valid_extensions)
+    numberline = 0
+    line = value.readline().decode('UTF-8')
+    isok=True
+    while( line != ""):
+        numberline = numberline+1
+        dotencountered = False
+        if(not ( line[0].isdigit() or (line[0] == '-' and line[1].isdigit()) )):
+            isok=False
+            break
+        for charac in line[1:-2]:
+            if( not (charac.isdigit() or charac == '.' or charac == ',' or charac == ' ' or charac=='-') ):
+                isok=False
+                break        if not isok:
+            break
+        line = value.readline().decode('UTF-8')
+    if not isok:
+        raise ValidationError(('Le fichier n\' est pas au bon format (vérifiez au niveau de la ligne %(line)s).'),params={'line': str(numberline)},  )    
+
+

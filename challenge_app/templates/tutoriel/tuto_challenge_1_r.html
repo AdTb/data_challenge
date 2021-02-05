@@ -1,0 +1,20 @@
+
+
+
+<div id="importing-the-data" class="section level1">
+<h1>Importing the data</h1>
+<pre class="r"><code>Train &lt;- read.table(&quot;Xtrain.csv&quot;,sep=&quot;,&quot;,header=FALSE)
+Train$Y &lt;- read.table(&quot;Ytrain.csv&quot;,sep=&quot;,&quot;,header=FALSE)$V1
+Xpred  &lt;- read.table(&quot;Xpred.csv&quot;,sep=&quot;,&quot;,header=FALSE)</code></pre>
+</div>
+<div id="declaring-and-fitting-the-model" class="section level1">
+<h1>Declaring and fitting the model</h1>
+<pre class="r"><code>reglin &lt;- lm(Y~.,data=Train)
+# [...] Declare and fit your own model
+Ypred = predict(reglin,Xpred)</code></pre>
+</div>
+<div id="write-the-prediction-file" class="section level1">
+<h1>Write the prediction file</h1>
+<pre class="r"><code># /!\ Do not use write.csv as it cannot remove the headers (column names) /!\
+write.table(Ypred,file=&quot;Ypred2.csv&quot;,row.names=FALSE,col.names = FALSE)</code></pre>
+</div>

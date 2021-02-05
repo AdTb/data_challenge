@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="row">
+    <div class="container">
+        <h1>{{ challenge.name }}</h1>
+        <p>
+        {{ challenge.description }}
+        </p>
+        {% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+        <div class="col-md-12">
+        <form  enctype="multipart/form-data" action="{% url 'upload' challenge.id %}" method="post">
+            {% csrf_token %}
+            <div class="col-md-12">
+            {{ form.as_p }}
+            </div>
+            <div class="col-md-12">
+                <input type="submit" value="Soumettre la prédiction">
+            </div>
+        </form>
+    </div>
+</div>
+{% endblock %}

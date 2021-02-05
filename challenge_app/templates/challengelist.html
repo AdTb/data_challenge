@@ -1,0 +1,33 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+ <section class="container h100">
+    <div class="jumbotron text-center bg-light">
+      <h1>Liste des challenges</h1>
+        <div class="row">
+               
+            {% for challenge in challenges %}
+                <div class="col-md-4">
+                  <div class="card mb-4 shadow-sm">
+                    <div class="card-body">
+                        <h2 class="card-title">{{ challenge.name }}  </h2>
+                      <p class="card-text text-truncate">{{ challenge.description }}</p>
+                      <div class="d-flex justify-content-between align-items-center">
+                        <div class="btn-group">
+                         <a href="{% url 'leaderboard' challenge.id %}" class="btn btn-primary my-2">Participer</a>
+                        </div>
+                        <small class="text-muted">{{ challenge.number_daily_submission }} essais/jour max</small>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+  </section>
+
+
+
+{% if error_message %}<p><strong>{{ error_message }}</strong></p>{% endif %}
+{% endblock %}
